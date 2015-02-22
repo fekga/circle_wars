@@ -1,0 +1,10 @@
+circle wars
+warlock-like battlearena game
+
+units are circles with different colors, healthbar arc around it in an arc
+
+spells can be chosen before match
+spells:
+	- blink, short distance teleport
+	- pulse, damages and pushes enemies back
+	- fireball, explodes on contact, leaves burning ground, explosion pushes back enemies

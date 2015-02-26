@@ -217,10 +217,10 @@ class GameWindow(pyglet.window.Window):
 
 		Object.init(self)
 		
-		music = pyglet.media.load('../res/DST-Azimuth.mp3')
+		#music = pyglet.media.load('../res/DST-Azimuth.mp3')
 		self.player = pyglet.media.Player()
 		self.player.volume = 0.3
-		self.player.queue(music)
+		#self.player.queue(music)
 		#self.player.play()
 		
 		self.event_handler = GameEventHandler(window=self)

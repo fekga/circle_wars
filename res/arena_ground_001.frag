@@ -1,7 +1,3 @@
-#version 400
-#pragma optimize(on)
-#pragma debug(off)
-
 uniform float time;
 uniform vec2 resolution;
 uniform vec2 focus;
@@ -56,13 +52,10 @@ vec3 voronoi( in vec2 x )
     {
         vec2 g = vec2(float(i),float(j));
 		vec2 o = vec2(noise( n + g ));
-<<<<<<< Updated upstream
-        float d = length(r);
-=======
->>>>>>> Stashed changes
 
         vec2 r = g + o - f;
-        float d = dot(r,r) + fbm(x);
+
+        float d = length(r);
 
         if( d<md )
         {
@@ -81,16 +74,10 @@ vec3 voronoi( in vec2 x )
     {
         vec2 g = mg + vec2(float(i),float(j));
 		vec2 o = vec2(noise( n + g ));
-<<<<<<< Updated upstream
 
         vec2 r = g + o - f;
 
-=======
-
-        vec2 r = g + o - f;
-
->>>>>>> Stashed changes
-        if( length(mr-r)>0.00001 )
+        if( length(r-mr)>0.00001 )
         md = min( md, dot( 0.5*(mr+r), normalize(r-mr) ) );
     }
 

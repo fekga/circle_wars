@@ -54,11 +54,13 @@ vec3 voronoi( in vec2 x )
     for( int j=-1; j<=1; j++ )
     for( int i=-1; i<=1; i++ )
     {
+<<<<<<< Updated upstream
+        vec2 b = vec2( i, j );
+        vec2 r = vec2( b ) + noise( p + b ) - f;
+        float d = dot(r,r);
+=======
         vec2 g = vec2(float(i),float(j));
 		vec2 o = vec2(noise( n + g ));
-<<<<<<< Updated upstream
-        float d = length(r);
-=======
 >>>>>>> Stashed changes
 
         vec2 r = g + o - f;
@@ -79,22 +81,37 @@ vec3 voronoi( in vec2 x )
     for( int j=-2; j<=2; j++ )
     for( int i=-2; i<=2; i++ )
     {
+<<<<<<< Updated upstream
+        vec2 b = mb + vec2( i, j );
+        vec2  r = vec2( b ) + noise( p + b ) - f;
+        vec2 n = r-mr;
+        float len = length(n);
+        if(len < 1e-30)
+        {
+            //len += cos(fbm(x*5.0)*10.0) * 0.01;
+            n /= len;
+        }
+        else
+            n = normalize(n);
+        float d = dot( 0.5*(mr+r), n );
+
+		//res += 1.0/pow( d, 8.0 );
+        res = min( res, d );
+    }
+	//return pow( 1.0/res, 1.0/16.0);
+	return res;
+=======
         vec2 g = mg + vec2(float(i),float(j));
 		vec2 o = vec2(noise( n + g ));
-<<<<<<< Updated upstream
 
         vec2 r = g + o - f;
 
-=======
-
-        vec2 r = g + o - f;
-
->>>>>>> Stashed changes
         if( length(mr-r)>0.00001 )
         md = min( md, dot( 0.5*(mr+r), normalize(r-mr) ) );
     }
 
     return vec3( md, mr );
+>>>>>>> Stashed changes
 }
 
 vec2 tr(vec2 p)

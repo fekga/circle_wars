@@ -1,7 +1,8 @@
-from client import Client
-import settings
-
 class Ability(object):
+	
+	@staticmethod
+	def init(**kwargs):
+		pass
 
 	def __init__(self, name, **kwargs):
 		self.name = name
@@ -34,19 +35,21 @@ class Ability(object):
 		
 	def set_disabled(self, disabled):
 		self.disabled = disabled
+	
+	def hide(self):
+		self.hidden = True
 		
-	def toggle(self):
-		pass
+	def unhide(self):
+		self.hidden = False
+		
+	def set_hidden(self, hidden):
+		self.hidden = hidden
 
 	def update_stats(self, **kwargs):
 		self.__init__(self.name, kwargs)
-		
-	if settings.isserver:
-		def use(self):
-			print self.name
-	else:
-		def use(self):
-			raise NotImplementedError('Used from client side!')
+	
+	def use(self):
+		print 'Not implemented'
 
 class PassiveAbility(Ability):
 
@@ -54,11 +57,19 @@ class PassiveAbility(Ability):
 		kwargs['ability_type'] = 'passive'
 		Ability.__init__(self,name,**kwargs)
 		
+	if isserver:
+		def use(self):
+			print self.name
+		
 class ActiveAbility(Ability):
 	
 	def __init__(self, name, **kwargs):
 		kwargs['ability_type'] = 'active'
 		Ability.__init__(self,name,**kwargs)
+		
+	if isserver:
+		def use(self):
+			print self.name
 		
 class ToggleAbility(Ability):
 	
@@ -67,7 +78,12 @@ class ToggleAbility(Ability):
 		Ability.__init__(self,name,**kwargs)
 		
 	def toggle(self):
-		self.diabled = not self.disabled
+		self.disabled = not self.disabled
+		print self.name, 'is now', 'disabled' if self.disabled else 'enabled'
+		
+	if isserver:
+		def use(self):
+			self.toggle()
 
 
 if __name__ == '__main__':

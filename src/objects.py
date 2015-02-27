@@ -6,7 +6,7 @@ from managers import *
 
 from contextlib import contextmanager
 
-debug=True
+debug=False
 
 @contextmanager
 def gl(attributes=None):
@@ -317,10 +317,3 @@ class Projectile(Object):
 	def draw(self):
 		if self.draw_func:
 			self.draw_func()
-
-
-def foo():
-	if "i" not in foo.__dict__: foo.i = 0
-	print foo.i
-
-foo()

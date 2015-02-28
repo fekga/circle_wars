@@ -2,7 +2,6 @@
 
 precision highp int;
 precision highp float;
-
 uniform float time;
 uniform vec2 resolution;
 uniform vec2 focus;
@@ -41,44 +40,45 @@ float fbm(vec2 p)
     return f;
 }
 
-float voronoi( in vec2 x )
+vec3 voronoi( in vec2 x )
 {
     ivec2 p = ivec2(floor( x ));
-    vec2 f = fract( x );
+    vec2 f = fract(x);
 
     ivec2 mb = ivec2(0);
     vec2 mr = vec2(0.0);
+    vec2 mg = vec2(0.0);
 
-
-    float res = 8.0;
-    for( int j=-1; j<=1; ++j )
-    for( int i=-1; i<=1; ++i )
+    float md = 8.0;
+    for(int j=-1; j<=1; ++j)
+    for(int i=-1; i<=1; ++i)
     {
         ivec2 b = ivec2( i, j );
-        vec2 r = vec2( b ) + noise( p + b ) - f;
+        vec2  r = vec2( b ) + noise( p + b ) - f;
+        vec2 g = vec2(float(i),float(j));
+		vec2 o = vec2(noise( vec2(p) + g ));
         float d = length(r);
 
-        if( d < res )
+        if( d<md )
         {
-            res = d;
+            md = d;
             mr = r;
-            mb = b;
+            mg = g;
         }
     }
 
-    res = 8.0;
-    for( int j=-2; j<=2; ++j )
-    for( int i=-2; i<=2; ++i )
+    md = 8.0;
+    for(int j=-2; j<=2; ++j)
+    for(int i=-2; i<=2; ++i)
     {
-        vec2 b = mb + vec2( i, j );
+        ivec2 b = ivec2( i, j );
         vec2 r = vec2( b ) + noise( p + b ) - f;
-        vec2 n = r-mr;
-        n /= length(n);
-        float d = dot( 0.5*(mr+r), n );
 
-        res = min( res, d );
+
+        if( length(r-mr)>0.00001 )
+        md = min( md, dot( 0.5*(mr+r), normalize(r-mr) ) );
     }
-	return res;
+    return vec3( md, mr );
 }
 
 vec2 tr(vec2 p)
@@ -119,7 +119,7 @@ void main()
 
 	{
         float val = 
-        voronoi(p*3.5)*(1.0-crack)*0.75;
+        voronoi(p*3.5).x*(1.0-crack)*0.75;
         //mix(voronoi(p*35.0),voronoi(p*3.5),crack_radius/len)*0.25;
 		vor = smoothstep(0.0,0.6,val);
 		vor = 1.0-vor;

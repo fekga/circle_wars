@@ -106,7 +106,7 @@ void main()
 	{
 		float val = 1.0 + cos(p.x*p.y + fbm(p*5.0) * 20.0 + time*2.0)/ 2.0;
 		lava = vec3(val*1.0, val*0.33, val*0.1);
-		lava = mix(lava*0.95,lava,abs(len-radius));
+		lava = mix(lava*0.95,lava,len-radius);
 		lava *= exp(-1.8);
 	}
 
@@ -118,10 +118,7 @@ void main()
 	}
 
 	{
-        float val = 
-        voronoi(p*3.5).x*(1.0-crack)*0.75;
-        //mix(voronoi(p*35.0),voronoi(p*3.5),crack_radius/len)*0.25;
-		vor = smoothstep(0.0,0.6,val);
+		vor = voronoi(p*3.5).x*(1.0-crack)*0.75;
 		vor = 1.0-vor;
 		vor *= smoothstep(0.0,radius,len);
 	}

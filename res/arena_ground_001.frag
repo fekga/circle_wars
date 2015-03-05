@@ -1,3 +1,7 @@
+#version 130
+
+precision highp int;
+precision highp float;
 uniform float time;
 uniform vec2 resolution;
 uniform vec2 focus;
@@ -38,23 +42,21 @@ float fbm(vec2 p)
 
 vec3 voronoi( in vec2 x )
 {
-    vec2 n = floor(x);
+    ivec2 p = ivec2(floor( x ));
     vec2 f = fract(x);
 
-    //----------------------------------
-    // first pass: regular voronoi
-    //----------------------------------
-	vec2 mg, mr;
+    ivec2 mb = ivec2(0);
+    vec2 mr = vec2(0.0);
+    vec2 mg = vec2(0.0);
 
     float md = 8.0;
-    for( int j=-1; j<=1; j++ )
-    for( int i=-1; i<=1; i++ )
+    for(int j=-1; j<=1; ++j)
+    for(int i=-1; i<=1; ++i)
     {
+        ivec2 b = ivec2( i, j );
+        vec2  r = vec2( b ) + noise( p + b ) - f;
         vec2 g = vec2(float(i),float(j));
-		vec2 o = vec2(noise( n + g ));
-
-        vec2 r = g + o - f;
-
+		vec2 o = vec2(noise( vec2(p) + g ));
         float d = length(r);
 
         if( d<md )
@@ -65,22 +67,17 @@ vec3 voronoi( in vec2 x )
         }
     }
 
-    //----------------------------------
-    // second pass: distance to borders
-    //----------------------------------
     md = 8.0;
-    for( int j=-2; j<=2; j++ )
-    for( int i=-2; i<=2; i++ )
+    for(int j=-2; j<=2; ++j)
+    for(int i=-2; i<=2; ++i)
     {
-        vec2 g = mg + vec2(float(i),float(j));
-		vec2 o = vec2(noise( n + g ));
+        ivec2 b = ivec2( i, j );
+        vec2 r = vec2( b ) + noise( p + b ) - f;
 
-        vec2 r = g + o - f;
 
         if( length(r-mr)>0.00001 )
         md = min( md, dot( 0.5*(mr+r), normalize(r-mr) ) );
     }
-
     return vec3( md, mr );
 }
 
@@ -94,7 +91,7 @@ vec2 tr(vec2 p)
 void main()
 {
 	
-	float radius = max(0.001,map_radius);
+	float radius = max(1e-20,map_radius);
 	vec2 fc = gl_FragCoord.xy + focus - resolution/2.0;
 	vec2 p = tr(fc);
 
@@ -104,11 +101,12 @@ void main()
 	vec3 ground = vec3(0.5,0.3,0.1);
 	float vor = 0.0;
 	float len = length(fc) + cos(fbm(p*15.0)*15.0)*15.0;
+    float crack = smoothstep(radius-crack_radius,radius,len);
 
 	{
 		float val = 1.0 + cos(p.x*p.y + fbm(p*5.0) * 20.0 + time*2.0)/ 2.0;
 		lava = vec3(val*1.0, val*0.33, val*0.1);
-		lava = mix(lava*0.95,lava,abs(len-radius));
+		lava = mix(lava*0.95,lava,len-radius);
 		lava *= exp(-1.8);
 	}
 
@@ -120,15 +118,12 @@ void main()
 	}
 
 	{
-        float val = 
-        voronoi(p*3.5).x*0.25;
-        //mix(voronoi(p*35.0),voronoi(p*3.5),crack_radius/len)*0.25;
-		vor = smoothstep(0.0,0.6,val);
+		vor = voronoi(p*3.5).x*(1.0-crack)*0.75;
 		vor = 1.0-vor;
 		vor *= smoothstep(0.0,radius,len);
 	}
 
-	col = mix(ground,lava,smoothstep(radius-crack_radius,radius,len));
+	col = mix(ground,lava,crack);
 	col = mix(col,lava,smoothstep(radius-crack_radius,radius,vor*radius));
 
 	gl_FragColor = vec4(col, 1.0);

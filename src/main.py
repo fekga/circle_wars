@@ -23,6 +23,11 @@ from shader import Shader
 from managers import *
 from objects import *
 
+from PIL import Image
+from PIL import BmpImagePlugin,GifImagePlugin,Jpeg2KImagePlugin,JpegImagePlugin,PngImagePlugin,TiffImagePlugin,WmfImagePlugin # added this line
+
+Image._initialized=2 # added this line
+
 
 @contextmanager
 def opened_w_error(filename, mode="r"):

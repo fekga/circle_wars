@@ -9,122 +9,147 @@ from pyglet.gl import *
 from ctypes import *
  
 class Shader:
-    # vert, frag and geom take arrays of source strings
-    # the arrays will be concattenated into one string by OpenGL
-    def __init__(self, vert = [], frag = [], geom = []):
-        # create the program handle
-        self.handle = glCreateProgram()
-        # we are not linked yet
-        self.linked = False
+	# vert, frag and geom take arrays of source strings
+	# the arrays will be concattenated into one string by OpenGL
+	def __init__(self, vert = [], frag = [], geom = []):
+
+		self.handle = glCreateProgram()
+		self.shader = None
+
+		self.linked = False
+		self.vert = vert
+		self.frag = frag
+		
+	def __del__(self):
+		glDetachShader(self.handle, self.shader)
  
-        # create the vertex shader
-        self.createShader(vert, GL_VERTEX_SHADER)
-        # create the fragment shader
-        self.createShader(frag, GL_FRAGMENT_SHADER)
-        # the geometry shader will be the same, once pyglet supports the extension
-        # self.createShader(frag, GL_GEOMETRY_SHADER_EXT)
+	def create(self):
+		self.createShader(self.vert, GL_VERTEX_SHADER)
+		self.createShader(self.frag, GL_FRAGMENT_SHADER)
+		self.link()
+		
+	def createShader(self, strings, type):
+		count = len(strings)
+		# if we have no source code, ignore this shader
+		if count < 1:
+			return
  
-        # attempt to link the program
-        self.link()
+		# create the shader handle
+		self.shader = glCreateShader(type)
  
-    def createShader(self, strings, type):
-        count = len(strings)
-        # if we have no source code, ignore this shader
-        if count < 1:
-            return
+		# convert the source strings into a ctypes pointer-to-char array, and upload them
+		# this is deep, dark, dangerous black magick - don't try stuff like this at home!
+		src = (c_char_p * count)(*strings)
+		glShaderSource(self.shader, count, cast(pointer(src), POINTER(POINTER(c_char))), None)
  
-        # create the shader handle
-        shader = glCreateShader(type)
+		# compile the shader
+		glCompileShader(self.shader)
  
-        # convert the source strings into a ctypes pointer-to-char array, and upload them
-        # this is deep, dark, dangerous black magick - don't try stuff like this at home!
-        src = (c_char_p * count)(*strings)
-        glShaderSource(shader, count, cast(pointer(src), POINTER(POINTER(c_char))), None)
+		temp = c_int(0)
+		# retrieve the compile status
+		glGetShaderiv(self.shader, GL_COMPILE_STATUS, byref(temp))
  
-        # compile the shader
-        glCompileShader(shader)
+		# if compilation failed, print the log
+		if not temp:
+			# retrieve the log length
+			glGetShaderiv(self.shader, GL_INFO_LOG_LENGTH, byref(temp))
+			# create a buffer for the log
+			buffer = create_string_buffer(temp.value)
+			# retrieve the log text
+			glGetShaderInfoLog(self.shader, temp, None, buffer)
+			# print the log to the console
+			print buffer.value
+		else:
+			# all is well, so attach the shader to the program
+			glAttachShader(self.handle, self.shader);
  
-        temp = c_int(0)
-        # retrieve the compile status
-        glGetShaderiv(shader, GL_COMPILE_STATUS, byref(temp))
+	def link(self):
+		# link the program
+		glLinkProgram(self.handle)
  
-        # if compilation failed, print the log
-        if not temp:
-            # retrieve the log length
-            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, byref(temp))
-            # create a buffer for the log
-            buffer = create_string_buffer(temp.value)
-            # retrieve the log text
-            glGetShaderInfoLog(shader, temp, None, buffer)
-            # print the log to the console
-            print buffer.value
-        else:
-            # all is well, so attach the shader to the program
-            glAttachShader(self.handle, shader);
+		temp = c_int(0)
+		# retrieve the link status
+		glGetProgramiv(self.handle, GL_LINK_STATUS, byref(temp))
  
-    def link(self):
-        # link the program
-        glLinkProgram(self.handle)
+		# if linking failed, print the log
+		if not temp:
+			#   retrieve the log length
+			glGetProgramiv(self.handle, GL_INFO_LOG_LENGTH, byref(temp))
+			# create a buffer for the log
+			buffer = create_string_buffer(temp.value)
+			# retrieve the log text
+			glGetProgramInfoLog(self.handle, temp, None, buffer)
+			# print the log to the console
+			print buffer.value
+		else:
+			# all is well, so we are linked
+			self.linked = True
+		return self.linked
  
-        temp = c_int(0)
-        # retrieve the link status
-        glGetProgramiv(self.handle, GL_LINK_STATUS, byref(temp))
+	def bind(self):
+		# bind the program
+		glUseProgram(self.handle)
  
-        # if linking failed, print the log
-        if not temp:
-            #   retrieve the log length
-            glGetProgramiv(self.handle, GL_INFO_LOG_LENGTH, byref(temp))
-            # create a buffer for the log
-            buffer = create_string_buffer(temp.value)
-            # retrieve the log text
-            glGetProgramInfoLog(self.handle, temp, None, buffer)
-            # print the log to the console
-            print buffer.value
-        else:
-            # all is well, so we are linked
-            self.linked = True
-        return self.linked
+	def unbind(self):
+		# unbind whatever program is currently bound - not necessarily this program,
+		# so this should probably be a class method instead
+		glUseProgram(0)
  
-    def bind(self):
-        # bind the program
-        glUseProgram(self.handle)
+	# upload a floating point uniform
+	# this program must be currently bound
+	def uniformf(self, name, *vals):
+		# check there are 1-4 values
+		if len(vals) in range(1, 5):
+			# select the correct function
+			{ 1 : glUniform1f,
+				2 : glUniform2f,
+				3 : glUniform3f,
+				4 : glUniform4f
+				# retrieve the uniform location, and set
+			}[len(vals)](glGetUniformLocation(self.handle, name), *vals)
  
-    def unbind(self):
-        # unbind whatever program is currently bound - not necessarily this program,
-        # so this should probably be a class method instead
-        glUseProgram(0)
+	# upload an integer uniform
+	# this program must be currently bound
+	def uniformi(self, name, *vals):
+		# check there are 1-4 values
+		if len(vals) in range(1, 5):
+			# select the correct function
+			{ 1 : glUniform1i,
+				2 : glUniform2i,
+				3 : glUniform3i,
+				4 : glUniform4i
+				# retrieve the uniform location, and set
+			}[len(vals)](glGetUniformLocation(self.handle, name), *vals)
  
-    # upload a floating point uniform
-    # this program must be currently bound
-    def uniformf(self, name, *vals):
-        # check there are 1-4 values
-        if len(vals) in range(1, 5):
-            # select the correct function
-            { 1 : glUniform1f,
-                2 : glUniform2f,
-                3 : glUniform3f,
-                4 : glUniform4f
-                # retrieve the uniform location, and set
-            }[len(vals)](glGetUniformLocation(self.handle, name), *vals)
- 
-    # upload an integer uniform
-    # this program must be currently bound
-    def uniformi(self, name, *vals):
-        # check there are 1-4 values
-        if len(vals) in range(1, 5):
-            # select the correct function
-            { 1 : glUniform1i,
-                2 : glUniform2i,
-                3 : glUniform3i,
-                4 : glUniform4i
-                # retrieve the uniform location, and set
-            }[len(vals)](glGetUniformLocation(self.handle, name), *vals)
- 
-    # upload a uniform matrix
-    # works with matrices stored as lists,
-    # as well as euclid matrices
-    def uniform_matrixf(self, name, mat):
-        # obtian the uniform location
-        loc = glGetUniformLocation(self.Handle, name)
-        # uplaod the 4x4 floating point matrix
-        glUniformMatrix4fv(loc, 1, False, (c_float * 16)(*mat))
+	# upload a uniform matrix
+	# works with matrices stored as lists,
+	# as well as euclid matrices
+	def uniform_matrixf(self, name, mat):
+		# obtian the uniform location
+		loc = glGetUniformLocation(self.Handle, name)
+		# uplaod the 4x4 floating point matrix
+		glUniformMatrix4fv(loc, 1, False, (c_float * 16)(*mat))
+		
+	def include(self, prefix=''):
+		#if self.handle and self.shader:
+			#glDetachShader(self.handle, self.shader)
+		
+		def replace_lines(shader, prefix):
+			new_shader = []
+			for content in shader:
+				new_lines = []
+				lines = content.split('\n')
+				for line in lines:
+					if line.startswith('#pragma include'):
+						filename = line.split(' ')[-1]
+						with open(prefix+filename,'r') as f:
+							line = f.read()
+					new_lines.append(line)
+				
+				new_shader.append('\n'.join(new_lines))
+			return new_shader
+			
+		
+		self.vert = replace_lines(self.vert,prefix)
+		self.frag = replace_lines(self.frag,prefix)
+		

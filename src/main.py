@@ -1,3 +1,8 @@
+from PIL.Image import core as _imaging
+from PIL import Image
+from PIL import BmpImagePlugin,GifImagePlugin,Jpeg2KImagePlugin,JpegImagePlugin,PngImagePlugin,TiffImagePlugin,WmfImagePlugin
+Image._initialized = 2
+
 import pyglet
 import math
 import random
@@ -16,17 +21,10 @@ from pyglet.media import *
 
 from ctypes import *
 
-#from pyglet.resource import *
-
 from shader import Shader
 
 from managers import *
 from objects import *
-
-from PIL import Image
-from PIL import BmpImagePlugin,GifImagePlugin,Jpeg2KImagePlugin,JpegImagePlugin,PngImagePlugin,TiffImagePlugin,WmfImagePlugin # added this line
-
-Image._initialized=2 # added this line
 
 
 @contextmanager
@@ -66,7 +64,7 @@ class GameEventHandler(object):
 	def __init__(self, window):
 		self.window = window
 		self.camera = self.window.camera
-		self.player = self.window.player
+		#self.player = self.window.player
 		self.keys = pyglet.window.key.KeyStateHandler()
 		self.mouse = dict(pos=(0,0),delta=(0,0),buttons=0,moved=False)
 		self.window.push_handlers(self)
@@ -223,8 +221,8 @@ class GameWindow(pyglet.window.Window):
 		Object.init(self)
 		
 		#music = pyglet.media.load('../res/DST-Azimuth.mp3')
-		self.player = pyglet.media.Player()
-		self.player.volume = 0.3
+		#self.player = pyglet.media.Player()
+		#self.player.volume = 0.3
 		#self.player.queue(music)
 		#self.player.play()
 		
@@ -256,10 +254,13 @@ class GameWindow(pyglet.window.Window):
 		
 		self.shaders = dict()
 		
-		self.load_shader('popcorn')
-		self.load_shader('scrolling')
+		#self.load_shader('popcorn')
+		#self.load_shader('scrolling')
 		self.load_shader('arena_ground_001','arena_ground')
-		self.load_shader('concentric')
+		
+		for key,shader in self.shaders.iteritems():
+			shader.include(prefix='../res/')
+			shader.create()
 
 		self.map_radius = 1200.0
 		self.map_size = 3000.0
